@@ -132,7 +132,6 @@ module PublicActivity
       # @return [nil] options
       def tracked(opts = {})
         options = opts.clone
-
         all_options = [:create, :update, :destroy]
 
         if !options.has_key?(:skip_defaults) && !options[:only] && !options[:except]

@@ -22,8 +22,8 @@ case PublicActivity::Config.orm
 when :active_record
   require 'active_record'
   require 'active_record/connection_adapters/sqlite3_adapter'
-  require 'stringio'        # silence the output
-  $stdout = StringIO.new    # from migrator
+  require 'stringio' # silence the output
+  $stdout = StringIO.new # from migrator
   ActiveRecord::Base.establish_connection(:adapter => 'sqlite3', :database => ':memory:')
   ActiveRecord::Migrator.migrate(File.expand_path('../migrations', __FILE__))
   $stdout = STDOUT
@@ -47,7 +47,7 @@ when :active_record
   class User < ActiveRecord::Base; end
 
   PublicActivity::Activity.class_eval do
-      attr_accessible :nonstandard
+    attr_accessible :nonstandard
   end
 
 when :mongoid
@@ -73,6 +73,41 @@ when :mongoid
 
     field :name, type: String
     field :published, type: Boolean
+  end
+
+  def article(options = {})
+    Article.class_eval do
+      set_public_activity_class_defaults
+      tracked options
+    end
+    Article
+  end
+
+when :mongo_mapper
+  require 'mongo_mapper'
+  require 'yaml'
+
+  MongoMapper.setup(YAML.load_file(File.expand_path("test/mongo_mapper.yml")), "test")
+
+  class User
+    include MongoMapper::Document
+
+    many :articles
+    key :name, String
+
+    timestamps!
+  end
+
+  class Article
+    include MongoMapper::Document
+    include PublicActivity::Model
+
+    belongs_to :user
+
+    key :name, String
+    key :published, Boolean
+
+    timestamps!
   end
 
   def article(options = {})
