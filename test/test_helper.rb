@@ -133,3 +133,8 @@ if PublicActivity::Config.orm == :mongoid && ENV['PA_PURGE']
     end
   end
 end
+
+def str_to_sym_hash params
+  params.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
+end
+

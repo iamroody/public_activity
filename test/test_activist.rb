@@ -8,11 +8,14 @@ describe PublicActivity::Activist do
     klass.new.must_respond_to :activities
     if ENV["PA_ORM"] == "active_record"
       klass.reflect_on_association(:activities_as_owner).options[:as].must_equal :owner
+      klass.reflect_on_association(:activities_as_owner).options[:class_name].must_equal "::PublicActivity::Activity"
     elsif ENV["PA_ORM"] == "mongoid"
       klass.reflect_on_association(:activities_as_owner).options[:inverse_of].must_equal :owner
+      klass.reflect_on_association(:activities_as_owner).options[:class_name].must_equal "::PublicActivity::Activity"
+    elsif ENV["PA_ORM"] == "mongo_mapper"
+      klass.associations[:activities_as_owner].options[:as].must_equal :owner
+      klass.associations[:activities_as_owner].options[:class_name].must_equal "::PublicActivity::Activity"
     end
-
-    klass.reflect_on_association(:activities_as_owner).options[:class_name].must_equal "::PublicActivity::Activity"
   end
 
   it 'returns activities from association' do
@@ -30,7 +33,15 @@ describe PublicActivity::Activist do
           activist
 
           field :name, type: String
-      end
+        end
+      when :mongo_mapper
+        class ActivistUser
+          include MongoMapper::Document
+          include PublicActivity::Model
+          activist
+
+          key :name, String
+        end
     end
     owner = ActivistUser.create(:name => "Peter Pan")
     a = article(owner: owner).new

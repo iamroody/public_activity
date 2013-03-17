@@ -13,14 +13,14 @@ describe PublicActivity::Common do
   it 'uses global fields' do
     subject.save
     activity = subject.activities.last
-    activity.parameters.must_equal @options[:params]
+    str_to_sym_hash(activity.parameters).must_equal @options[:params]
     activity.owner.must_equal @owner
   end
 
   it 'allows custom fields' do
     subject.save
     subject.create_activity :with_custom_fields, nonstandard: "Custom allowed"
-    subject.activities.last.nonstandard.must_equal "Custom allowed"
+    subject.activities.to_a.last.nonstandard.must_equal "Custom allowed"
   end
 
   it '#create_activity returns a new activity object' do
@@ -40,36 +40,36 @@ describe PublicActivity::Common do
     subject.published = true
     subject.save
     subject.create_activity :with_custom_fields, nonstandard: :name
-    subject.activities.last.nonstandard.must_equal "Resolving is great"
+    subject.activities.to_a.last.nonstandard.must_equal "Resolving is great"
     subject.create_activity :with_custom_fields_2, nonstandard: proc {|_, model| model.published.to_s}
-    subject.activities.last.nonstandard.must_equal "true"
+    subject.activities.to_a.last.nonstandard.must_equal "true"
   end
 
   it 'inherits instance parameters' do
     subject.activity :params => {:author_name => "Michael"}
     subject.save
-    activity = subject.activities.last
+    activity = subject.activities.to_a.last
 
-    activity.parameters[:author_name].must_equal "Michael"
+    str_to_sym_hash(activity.parameters)[:author_name].must_equal "Michael"
   end
 
   it 'accepts instance recipient' do
     subject.activity :recipient => @recipient
     subject.save
-    subject.activities.last.recipient.must_equal @recipient
+    subject.activities.to_a.last.recipient.must_equal @recipient
   end
 
   it 'accepts instance owner' do
     subject.activity :owner => @owner
     subject.save
-    subject.activities.last.owner.must_equal @owner
+    subject.activities.to_a.last.owner.must_equal @owner
   end
 
   it 'accepts owner as a symbol' do
     klass = article(:owner => :user)
     @article = klass.new(:user => @owner)
     @article.save
-    activity = @article.activities.last
+    activity = @article.activities.to_a.last
 
     activity.owner.must_equal @owner
   end

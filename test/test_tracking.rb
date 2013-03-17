@@ -19,7 +19,7 @@ describe PublicActivity::Tracked do
     specify { activity.owner.must_equal               options[:owner] }
 
     specify { subject.activity_params.must_be_same_as options[:params] }
-    specify { activity.parameters.must_equal          options[:params] }
+    specify { str_to_sym_hash(activity.parameters).must_equal          options[:params] }
 
     specify { subject.activity_recipient.must_be_same_as options[:recipient] }
     specify { activity.recipient.must_equal              options[:recipient] }
@@ -38,6 +38,20 @@ describe PublicActivity::Tracked do
         field :published, type: Boolean
         tracked
         activist
+      end
+    elsif PublicActivity.config.orm == :mongo_mapper
+      class ActivistAndTrackedArticle
+        include MongoMapper::Document
+        include PublicActivity::Model
+
+        belongs_to :user
+
+        key :name, String
+        key :published, Boolean
+        tracked
+        activist
+
+        timestamps!
       end
     else
       class ActivistAndTrackedArticle < ActiveRecord::Base
@@ -159,6 +173,18 @@ describe PublicActivity::Tracked do
           field :published, type: Boolean
           tracked :skip_defaults => true
         end
+      elsif PublicActivity.config.orm == :mongo_mapper
+        art = Class.new do
+          include MongoMapper::Document
+          include PublicActivity::Model
+
+          belongs_to :user
+
+          key :name, String
+          key :published, Boolean
+          tracked :skip_defaults => true
+          timestamps!
+        end
       else
         art = article(:skip_defaults => true)
       end
@@ -202,6 +228,19 @@ describe PublicActivity::Tracked do
           field :published, type: Boolean
           tracked :except => [:create]
         end
+      elsif PublicActivity.config.orm == :mongo_mapper
+        art = Class.new do
+          include MongoMapper::Document
+          include PublicActivity::Model
+
+          belongs_to :user
+
+          key :name, String
+          key :published, Boolean
+          tracked :except => [:create]
+
+          timestamps!
+        end
       else
         art = article(:except => [:create])
       end
@@ -224,6 +263,20 @@ describe PublicActivity::Tracked do
           field :published, type: Boolean
 
           tracked :only => [:create, :update]
+        end
+      elsif PublicActivity.config.orm == :mongo_mapper
+        art = Class.new do
+          include MongoMapper::Document
+          include PublicActivity::Model
+
+          belongs_to :user
+
+          key :name, String
+          key :published, Boolean
+
+          tracked :only => [:create, :update]
+
+          timestamps!
         end
       else
         art = article({:only => [:create, :update]})
@@ -300,6 +353,7 @@ describe PublicActivity::Tracked do
         model.name.must_equal 'Some Name'
         false
       }
+
       pt = proc { |model, controller|
         controller.must_be_same_as PublicActivity.get_controller
         model.name.must_equal 'Other Name'
@@ -307,7 +361,7 @@ describe PublicActivity::Tracked do
       }
       @article.class.activity_hooks = {:create => pf, :update => pt, :destroy => pt}
 
-      @article.activities.must_be_empty
+      @article.activities.to_a.must_be_empty
       @article.save # create
       @article.name = 'Other Name'
       @article.save # update
@@ -315,6 +369,7 @@ describe PublicActivity::Tracked do
 
       @article.activities.count.must_equal 2
       @article.activities.first.key.must_equal 'article.update'
+
     end
   end
 end
